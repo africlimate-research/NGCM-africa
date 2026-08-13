@@ -32,16 +32,14 @@
 set -euo pipefail
 
 # --- one-time environment setup (run once, interactively, before first sbatch) ---
-# No conda on htc -- use a plain venv instead. Confirm the exact Python
-# module name/version first (neuralgcm needs >=3.10):
-#   module avail python       # or: module spider Python
-#   module load <Python module reported above>
+# No conda on htc -- use a plain venv instead.
+#   module load Python/3.11.5-GCCcore-13.2.0
 #   python3 -m venv $DATA/envs/ngcm-env
 #   source $DATA/envs/ngcm-env/bin/activate
 #   pip install -r requirements.txt
 # ---------------------------------------------------------------------------------
 
-module load Python/3.11  # TODO: confirm this module name via `module avail python` on ARC
+module load Python/3.11.5-GCCcore-13.2.0
 source "$DATA/envs/ngcm-env/bin/activate"
 
 : "${YEAR:?YEAR must be set via sbatch --export}"
