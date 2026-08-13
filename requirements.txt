@@ -1,0 +1,10 @@
+# neuralgcm pulls in its own dinosaur/jax/haiku/xarray dependencies.
+neuralgcm==1.2.2
+gcsfs
+zarr
+dask[array]
+
+# GPU JAX build for ARC's CUDA nodes. Confirm the CUDA major version
+# available on ARC (module spider CUDA) matches this before installing --
+# jax[cuda12] requires a host CUDA/driver new enough for CUDA 12.
+jax[cuda12]
