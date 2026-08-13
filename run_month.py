@@ -2,7 +2,7 @@
 reforecast Zarr archive for that year.
 
 Usage:
-  python -m neuralgcm_flow.run_month --year 2023 --month 3 \
+  python -m ngcm.run_month --year 2023 --month 3 \
       --output-dir /path/to/archive
 
 The store `neuralgcm_reforecast_<year>.zarr` is shared across all 12
@@ -32,11 +32,11 @@ from pathlib import Path
 import jax
 import numpy as np
 
-from neuralgcm_flow import config
-from neuralgcm_flow import init_times as init_times_lib
-from neuralgcm_flow import model_io
-from neuralgcm_flow import reforecast
-from neuralgcm_flow import zarr_io
+from ngcm import config
+from ngcm import init_times as init_times_lib
+from ngcm import model_io
+from ngcm import reforecast
+from ngcm import zarr_io
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

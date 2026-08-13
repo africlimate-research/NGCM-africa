@@ -10,7 +10,7 @@ from dinosaur import horizontal_interpolation
 from dinosaur import spherical_harmonic
 from dinosaur import xarray_utils
 
-from neuralgcm_flow import config
+from ngcm import config
 
 
 def load_model() -> neuralgcm.PressureLevelModel:

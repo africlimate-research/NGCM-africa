@@ -15,7 +15,7 @@
 # submit_all.sh for real, benchmark one init on the "devel" or "short"
 # partition:
 #   srun --partition=short --gres=gpu:a100:1 --time=00:30:00 \
-#     python -m neuralgcm_flow.run_month --year 2023 --month 1 \
+#     python -m ngcm.run_month --year 2023 --month 1 \
 #     --output-dir $OUTPUT_DIR --limit-inits 1
 # then tighten --time/--partition here accordingly (one month is at most 8
 # inits).
@@ -32,15 +32,17 @@
 set -euo pipefail
 
 # --- one-time environment setup (run once, interactively, before first sbatch) ---
-#   module spider Anaconda3   # confirm the exact module name/version on ARC
-#   module load Anaconda3     # or Miniconda3, per whatever `module spider` reports
-#   conda create -p $DATA/envs/neuralgcm-env python=3.11 -y
-#   conda activate $DATA/envs/neuralgcm-env
+# No conda on htc -- use a plain venv instead. Confirm the exact Python
+# module name/version first (neuralgcm needs >=3.10):
+#   module avail python       # or: module spider Python
+#   module load <Python module reported above>
+#   python3 -m venv $DATA/envs/ngcm-env
+#   source $DATA/envs/ngcm-env/bin/activate
 #   pip install -r requirements.txt
 # ---------------------------------------------------------------------------------
 
-module load Anaconda3
-source activate "$DATA/envs/neuralgcm-env"
+module load Python/3.11  # TODO: confirm this module name via `module avail python` on ARC
+source "$DATA/envs/ngcm-env/bin/activate"
 
 : "${YEAR:?YEAR must be set via sbatch --export}"
 MONTH="${SLURM_ARRAY_TASK_ID:-${MONTH:?Set MONTH via --export, or submit as an --array}}"
@@ -48,5 +50,5 @@ MONTH="${SLURM_ARRAY_TASK_ID:-${MONTH:?Set MONTH via --export, or submit as an -
 OUTPUT_DIR="$DATA/neuralgcm_reforecast"
 mkdir -p "$OUTPUT_DIR" logs
 
-python -m neuralgcm_flow.run_month \
+python -m ngcm.run_month \
   --year "$YEAR" --month "$MONTH" --output-dir "$OUTPUT_DIR"

@@ -13,7 +13,7 @@ import dask.array as da
 import numpy as np
 import xarray
 
-from neuralgcm_flow import config
+from ngcm import config
 
 _TOTAL_STEPS = config.LEAD_DAYS * 24 // config.OUTPUT_TIMESTEP_HOURS
 _STEPS_PER_CHUNK = config.CHUNK_DAYS * 24 // config.OUTPUT_TIMESTEP_HOURS

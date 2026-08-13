@@ -4,7 +4,7 @@ import calendar
 
 import numpy as np
 
-from neuralgcm_flow import config
+from ngcm import config
 
 
 def init_times_for_year(
