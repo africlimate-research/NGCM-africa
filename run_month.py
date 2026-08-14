@@ -93,14 +93,15 @@ def run_month(
       )
       break
 
-    window = model_io.load_forcing_window(
+    ic = model_io.load_initial_conditions(full_era5, model, regridder, init_time)
+    forcing = model_io.load_forcing_window(
         full_era5, model, regridder, init_time, config.LEAD_DAYS
     )
     seed = abs(hash((year, str(init_time)))) % (2**32)
     rng_key = jax.random.key(seed)
 
     for chunk_idx, chunk_ds in enumerate(
-        reforecast.run_chunked_rollout(model, window, rng_key)
+        reforecast.run_chunked_rollout(model, ic, forcing, rng_key)
     ):
       chunk_ds = chunk_ds.expand_dims(init_time=[init_time])
       if not skeleton_written:

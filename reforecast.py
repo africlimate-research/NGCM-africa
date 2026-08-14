@@ -38,19 +38,21 @@ def _select_output_variables(ds: xarray.Dataset) -> xarray.Dataset:
 
 def run_chunked_rollout(
     model: neuralgcm.PressureLevelModel,
-    window_ds: xarray.Dataset,
+    ic_ds: xarray.Dataset,
+    forcing_ds: xarray.Dataset,
     rng_key: jax.Array,
 ) -> Iterator[xarray.Dataset]:
   """Yields one xarray.Dataset per CHUNK_DAYS-long piece of a LEAD_DAYS rollout.
 
-  `window_ds` must span [init_time, init_time + LEAD_DAYS] at daily
-  resolution (see model_io.load_forcing_window), with its first timestep
-  used as the initial condition.
+  `ic_ds` is the single-timestep initial condition (see
+  model_io.load_initial_conditions); `forcing_ds` must span
+  [init_time, init_time + LEAD_DAYS] at daily resolution (see
+  model_io.load_forcing_window), with its first timestep matching `ic_ds`'s.
   """
-  inputs = model.inputs_from_xarray(window_ds.isel(time=0))
-  forcings0 = model.forcings_from_xarray(window_ds.isel(time=0))
+  inputs = model.inputs_from_xarray(ic_ds)
+  forcings0 = model.forcings_from_xarray(forcing_ds.isel(time=0))
   state = model.encode(inputs, forcings0, rng_key)
-  all_forcings = model.forcings_from_xarray(window_ds)
+  all_forcings = model.forcings_from_xarray(forcing_ds)
 
   timedelta = np.timedelta64(config.OUTPUT_TIMESTEP_HOURS, "h")
 
