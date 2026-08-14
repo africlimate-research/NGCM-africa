@@ -62,6 +62,27 @@ def write_skeleton(
   skeleton.to_zarr(store_path, mode="w", compute=False)
 
 
-def write_region(store_path: Path, chunk_ds: xarray.Dataset) -> None:
-  """Writes one (init_time, lead_time-chunk) slice into its pre-allocated region."""
-  chunk_ds.to_zarr(store_path, region="auto")
+def write_region(
+    store_path: Path,
+    chunk_ds: xarray.Dataset,
+    init_time_index: int,
+    chunk_idx: int,
+) -> None:
+  """Writes one (init_time, lead_time-chunk) slice into its pre-allocated region.
+
+  Regions are computed explicitly for init_time/lead_time rather than via
+  region="auto": auto-detection requires a coordinate variable in the store
+  for every dimension present in chunk_ds, but level/latitude/longitude and
+  any singleton dims on single-level variables (e.g. a "surface" dim) never
+  get one from write_skeleton -- they're always written in full, not
+  regioned, so they don't need one. Coordinates are dropped from chunk_ds
+  before writing since the skeleton already has the correct values for
+  every dimension.
+  """
+  lead_start = chunk_idx * _STEPS_PER_CHUNK
+  region = {
+      "init_time": slice(init_time_index, init_time_index + 1),
+      "lead_time": slice(lead_start, lead_start + _STEPS_PER_CHUNK),
+  }
+  chunk_ds = chunk_ds.drop_vars(list(chunk_ds.coords))
+  chunk_ds.to_zarr(store_path, region=region)

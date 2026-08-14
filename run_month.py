@@ -100,6 +100,8 @@ def run_month(
     seed = abs(hash((year, str(init_time)))) % (2**32)
     rng_key = jax.random.key(seed)
 
+    init_time_index = full_year_init_times.index(init_time)
+
     for chunk_idx, chunk_ds in enumerate(
         reforecast.run_chunked_rollout(model, ic, forcing, rng_key)
     ):
@@ -107,7 +109,7 @@ def run_month(
       if not skeleton_written:
         zarr_io.write_skeleton(store_path, chunk_ds, full_year_init_times)
         skeleton_written = True
-      zarr_io.write_region(store_path, chunk_ds)
+      zarr_io.write_region(store_path, chunk_ds, init_time_index, chunk_idx)
       logger.info(
           "Wrote %s chunk %d/%d", init_time, chunk_idx + 1, reforecast._N_CHUNKS
       )
