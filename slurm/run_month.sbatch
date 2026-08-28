@@ -10,22 +10,18 @@
 # actually need them. If A100 queue times are long, htc-g[061-084] (L40S,
 # 24 nodes / 96 GPUs) is a fine fallback -- swap the --gres line below.
 #
-# --time and --partition below are a conservative placeholder (this repo
-# has no way to benchmark actual per-init runtime on ARC). Before running
-# submit_all.sh for real, benchmark one init on the "devel" or "short"
-# partition:
-#   srun --partition=short --gres=gpu:a100:1 --time=00:30:00 \
-#     python -m ngcm.run_month --year 2023 --month 1 \
-#     --output-dir $OUTPUT_DIR --limit-inits 1
-# then tighten --time/--partition here accordingly (one month is at most 8
-# inits).
+# --time/--mem/--partition below are sized from a real benchmark (sacct,
+# job 8569257): one init (checkpoint load, ERA5 regrid, chunked 45-day
+# rollout, zarr write) took ~14m52s elapsed and peaked at ~2.9GB (MaxRSS
+# 2949280K). Since one month is a single init (config.INIT_DAYS_OF_MONTH
+# == [1]), that benchmark is directly this job's expected footprint.
 #
 #SBATCH --job-name=neuralgcm-reforecast
-#SBATCH --partition=long
+#SBATCH --partition=short
 #SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
-#SBATCH --time=1-00:00:00
+#SBATCH --mem=8G
+#SBATCH --time=00:45:00
 #SBATCH --output=logs/reforecast_%A_%a.out
 #SBATCH --error=logs/reforecast_%A_%a.err
 
