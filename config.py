@@ -12,11 +12,11 @@ CHECKPOINT = "v1_precip/stochastic_precip_2_8_deg.pkl"
 ERA5_PATH = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
 
 # Initializations are at 00 UTC on these days of every month. A day that
-# doesn't exist in a given month (e.g. day 31 in April, or day 31/29/28 in
-# February) is clamped down to that month's last day instead, so every
-# month always contributes exactly len(INIT_DAYS_OF_MONTH) inits.
+# doesn't exist in a given month is clamped down to that month's last day
+# instead, so every month always contributes exactly len(INIT_DAYS_OF_MONTH)
+# inits (moot at a single day, but harmless if this list ever grows again).
 INIT_HOUR = 0
-INIT_DAYS_OF_MONTH = [1, 7, 9, 13, 17, 19, 25, 31]
+INIT_DAYS_OF_MONTH = [1]
 
 LEAD_DAYS = 45
 OUTPUT_TIMESTEP_HOURS = 24
