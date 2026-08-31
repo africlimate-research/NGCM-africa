@@ -42,7 +42,7 @@ source "$DATA/envs/ngcm-env/bin/activate"
 MONTH="${SLURM_ARRAY_TASK_ID:-${MONTH:?Set MONTH via --export, or submit as an --array}}"
 
 OUTPUT_DIR="$DATA/neuralgcm_reforecast"
-mkdir -p "$OUTPUT_DIR" logs
+mkdir -p "$OUTPUT_DIR"
 
 python -m ngcm.run_month \
   --year "$YEAR" --month "$MONTH" --output-dir "$OUTPUT_DIR"

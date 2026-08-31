@@ -12,6 +12,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# #SBATCH --output=logs/... in run_month.sbatch is resolved by SLURM before
+# the job's script body runs, so `logs/` must already exist at submission
+# time -- creating it inside the job itself is too late and makes the job
+# fail instantly with no output written anywhere.
+mkdir -p logs
+
 for YEAR in $(seq 1990 2026); do
   SEED_JOB=$(sbatch --parsable --export=ALL,YEAR="$YEAR",MONTH=1 run_month.sbatch)
   echo "Year $YEAR: month 1 seed job = $SEED_JOB"
