@@ -38,6 +38,12 @@ set -euo pipefail
 module load Python/3.11.5-GCCcore-13.2.0
 source "$DATA/envs/ngcm-env/bin/activate"
 
+# ngcm isn't pip-installed (it's the source tree at $HOME/ngcm), so
+# `python -m ngcm.run_month` only resolves if $HOME is on PYTHONPATH --
+# the job's working directory is wherever it was sbatch'd from
+# (ngcm/slurm/, per submit_all.sh), not $HOME itself.
+export PYTHONPATH="$HOME:${PYTHONPATH:-}"
+
 : "${YEAR:?YEAR must be set via sbatch --export}"
 MONTH="${SLURM_ARRAY_TASK_ID:-${MONTH:?Set MONTH via --export, or submit as an --array}}"
 
