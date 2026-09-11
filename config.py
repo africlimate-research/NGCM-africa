@@ -1,9 +1,9 @@
 """Configuration for the NeuralGCM reforecast archive pipeline.
 
-Produces repeated 45-day rollouts of the stochastic-precipitation NeuralGCM
-checkpoint, initialized from ERA5 on a fixed set of calendar days each month,
-and stores a fixed set of variables/pressure-levels into one Zarr store per
-initialization year.
+Produces repeated 45-day, ENSEMBLE_SIZE-member rollouts of the
+stochastic-precipitation NeuralGCM checkpoint, initialized from ERA5 every
+day of every month, and stores a fixed set of variables/pressure-levels
+into one Zarr store per initialization year.
 """
 
 CHECKPOINT_BUCKET = "gs://neuralgcm/models"
@@ -13,10 +13,19 @@ ERA5_PATH = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v
 
 # Initializations are at 00 UTC on these days of every month. A day that
 # doesn't exist in a given month is clamped down to that month's last day
-# instead, so every month always contributes exactly len(INIT_DAYS_OF_MONTH)
-# inits (moot at a single day, but harmless if this list ever grows again).
+# instead (init_times.py dedupes the result), so a short month just gets
+# fewer, not duplicate, inits.
 INIT_HOUR = 0
-INIT_DAYS_OF_MONTH = [1]
+INIT_DAYS_OF_MONTH = list(range(1, 32))
+
+# Each init runs this many ensemble members (independent stochastic
+# realizations, batched together via jax.vmap -- see reforecast.py), stored
+# along a "realization" dimension. This multiplies both GPU memory per init
+# and total storage by ENSEMBLE_SIZE compared to a single member: verify
+# with a fresh --limit-inits 1 dry run that this still fits the GPU/--mem
+# budget in slurm/run_month.sbatch before relying on the configured
+# defaults there, which predate this setting.
+ENSEMBLE_SIZE = 10
 
 LEAD_DAYS = 45
 OUTPUT_TIMESTEP_HOURS = 24

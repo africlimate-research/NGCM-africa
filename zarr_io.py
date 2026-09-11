@@ -42,7 +42,7 @@ def write_skeleton(
       "init_time": np.array(all_init_times, dtype="datetime64[ns]"),
       "lead_time": lead_time,
   }
-  for name in ("level", "latitude", "longitude"):
+  for name in ("realization", "level", "latitude", "longitude"):
     if name in sample_chunk_ds.coords:
       coords[name] = sample_chunk_ds.coords[name].values
 

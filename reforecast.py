@@ -48,26 +48,46 @@ def run_chunked_rollout(
   model_io.load_initial_conditions); `forcing_ds` must span
   [init_time, init_time + LEAD_DAYS] at daily resolution (see
   model_io.load_forcing_window), with its first timestep matching `ic_ds`'s.
+
+  Runs config.ENSEMBLE_SIZE independent stochastic realizations together via
+  jax.vmap (one rng_key per member, split from `rng_key`; `inputs`/
+  `forcing_ds` are the same observed ERA5 data for every member -- only the
+  injected noise differs). Each yielded chunk stacks all members along a
+  "realization" dimension. model.data_to_xarray does host-side Dataset
+  construction, not a pure array op, so it isn't itself vmapped -- it's
+  called once per member on the already-computed (vmapped, then concrete)
+  outputs, and the per-member Datasets are concatenated afterwards.
   """
   inputs = model.inputs_from_xarray(ic_ds)
   forcings0 = model.forcings_from_xarray(forcing_ds.isel(time=0))
-  state = model.encode(inputs, forcings0, rng_key)
   all_forcings = model.forcings_from_xarray(forcing_ds)
+
+  member_keys = jax.random.split(rng_key, config.ENSEMBLE_SIZE)
+  state = jax.vmap(lambda key: model.encode(inputs, forcings0, key))(member_keys)
 
   timedelta = np.timedelta64(config.OUTPUT_TIMESTEP_HOURS, "h")
 
-  for chunk_idx in range(_N_CHUNKS):
-    state, outputs = model.unroll(
-        state,
+  def unroll_member(member_state):
+    return model.unroll(
+        member_state,
         all_forcings,
         steps=_STEPS_PER_CHUNK,
         timedelta=timedelta,
         start_with_input=False,
     )
+
+  for chunk_idx in range(_N_CHUNKS):
+    state, outputs = jax.vmap(unroll_member)(state)
     lead_hours = (
         np.arange(_STEPS_PER_CHUNK) + 1 + chunk_idx * _STEPS_PER_CHUNK
     ) * config.OUTPUT_TIMESTEP_HOURS
-    chunk_ds = model.data_to_xarray(outputs, times=lead_hours)
+
+    member_datasets = [
+        model.data_to_xarray(jax.tree.map(lambda x: x[m], outputs), times=lead_hours)
+        for m in range(config.ENSEMBLE_SIZE)
+    ]
+    chunk_ds = xarray.concat(member_datasets, dim="realization")
+    chunk_ds = chunk_ds.assign_coords(realization=np.arange(config.ENSEMBLE_SIZE))
     chunk_ds = chunk_ds.rename(time="lead_time")
     chunk_ds["lead_time"] = chunk_ds["lead_time"].astype("timedelta64[h]")
     yield _select_output_variables(chunk_ds)

@@ -10,18 +10,29 @@
 # actually need them. If A100 queue times are long, htc-g[061-084] (L40S,
 # 24 nodes / 96 GPUs) is a fine fallback -- swap the --gres line below.
 #
-# --time/--mem/--partition below are sized from a real benchmark (sacct,
-# job 8569257): one init (checkpoint load, ERA5 regrid, chunked 45-day
-# rollout, zarr write) took ~14m52s elapsed and peaked at ~2.9GB (MaxRSS
-# 2949280K). Since one month is a single init (config.INIT_DAYS_OF_MONTH
-# == [1]), that benchmark is directly this job's expected footprint.
+# --time/--mem/--partition below are STALE placeholders, not yet
+# re-benchmarked. The prior numbers (sacct job 8569257: ~14m52s, ~2.9GB
+# MaxRSS) were for ONE init with ONE ensemble member -- since
+# config.INIT_DAYS_OF_MONTH now covers every day of the month (~30
+# inits/month, processed sequentially in one job) and config.ENSEMBLE_SIZE
+# batches 10 stochastic realizations per init via jax.vmap, both the
+# per-job wall time and the per-init GPU memory footprint have changed in
+# ways that benchmark no longer reflects. Before relying on these values:
+#   srun --partition=short --gres=gpu:a100:1 --time=00:30:00 \
+#     python -m ngcm.run_month --year 2023 --month 1 \
+#     --output-dir $OUTPUT_DIR --limit-inits 1
+# then check `nvidia-smi` (or sacct MaxRSS for host memory) during/after
+# for the actual 10-member GPU memory peak, and multiply the elapsed time
+# by ~30 (inits/month) with margin for --time. The values below
+# (`medium`/`12G`/`8h`) are a conservative guess pending that, not a
+# validated number.
 #
 #SBATCH --job-name=neuralgcm-reforecast
-#SBATCH --partition=short
+#SBATCH --partition=medium
 #SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=8G
-#SBATCH --time=00:45:00
+#SBATCH --mem=12G
+#SBATCH --time=08:00:00
 #SBATCH --output=logs/reforecast_%A_%a.out
 #SBATCH --error=logs/reforecast_%A_%a.err
 
