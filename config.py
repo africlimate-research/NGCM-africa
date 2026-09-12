@@ -31,14 +31,12 @@ LEAD_DAYS = 45
 OUTPUT_TIMESTEP_HOURS = 24
 CHUNK_DAYS = 9  # rollout is computed and flushed to zarr in chunks this long
 
-PRESSURE_LEVELS_HPA = [1000, 850, 700, 500, 200]
+PRESSURE_LEVELS_HPA = [1000]
 
 # Variables carrying a `level` dimension, selected down to PRESSURE_LEVELS_HPA.
 PRESSURE_LEVEL_VARIABLES = [
-    "geopotential",
     "temperature",
     "specific_humidity",
-    "specific_cloud_ice_water_content",
     "u_component_of_wind",
     "v_component_of_wind",
 ]
