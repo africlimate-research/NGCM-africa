@@ -32,6 +32,7 @@ from pathlib import Path
 import jax
 import numpy as np
 
+from ngcm import climatology
 from ngcm import config
 from ngcm import init_times as init_times_lib
 from ngcm import model_io
@@ -72,31 +73,50 @@ def run_month(
       year, month, len(month_init_times),
   )
 
+  if config.FORCING_MODE not in ("observed", "anomaly_persistence"):
+    raise ValueError(f"Unknown config.FORCING_MODE {config.FORCING_MODE!r}")
+
+  skeleton_written = store_path.exists()
+  if skeleton_written:
+    zarr_io.check_forcing_mode(store_path)
+
+  clim = None
+  if config.FORCING_MODE == "anomaly_persistence":
+    clim = climatology.load(climatology.climatology_path(output_dir))
+
   model = model_io.load_model()
   full_era5 = model_io.open_era5()
   regridder = model_io.build_regridder(model, full_era5)
-  era5_max_time = full_era5.time.max().values
-
-  skeleton_written = store_path.exists()
+  era5_max_time = model_io.last_valid_era5_time(full_era5)
+  logger.info("ERA5 has data through %s", era5_max_time)
 
   for init_time in month_init_times:
     if str(init_time) in done:
       logger.info("Skipping %s (already done)", init_time)
       continue
 
-    required_end = init_time + np.timedelta64(config.LEAD_DAYS, "D")
-    if required_end > era5_max_time:
+    # Observed forcing is read at every valid date; persisted forcing only
+    # needs ERA5 at the init itself.
+    needs_era5_through = init_time
+    if config.FORCING_MODE == "observed":
+      needs_era5_through += np.timedelta64(config.LEAD_DAYS, "D")
+    if needs_era5_through > era5_max_time:
       logger.warning(
-          "Stopping at %s: ERA5 archive only extends to %s, not far enough "
-          "to cover a %d-day rollout.",
-          init_time, era5_max_time, config.LEAD_DAYS,
+          "Stopping at %s: ERA5 only has data through %s but forcing mode "
+          "%r needs it through %s.",
+          init_time, era5_max_time, config.FORCING_MODE, needs_era5_through,
       )
       break
 
     ic = model_io.load_initial_conditions(full_era5, model, regridder, init_time)
-    forcing = model_io.load_forcing_window(
-        full_era5, model, regridder, init_time, config.LEAD_DAYS
-    )
+    if config.FORCING_MODE == "observed":
+      forcing = model_io.load_forcing_window(
+          full_era5, model, regridder, init_time, config.LEAD_DAYS
+      )
+    else:
+      forcing = model_io.load_persisted_forcing_window(
+          full_era5, model, regridder, clim, init_time, config.LEAD_DAYS
+      )
     seed = abs(hash((year, str(init_time)))) % (2**32)
     rng_key = jax.random.key(seed)
 

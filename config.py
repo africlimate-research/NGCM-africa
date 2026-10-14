@@ -27,6 +27,20 @@ INIT_DAYS_OF_MONTH = list(range(1, 32))
 # defaults there, which predate this setting.
 ENSEMBLE_SIZE = 10
 
+# How the SST / sea-ice forcing for each rollout is built:
+#   "observed": read ERA5 at every valid date. Needs ERA5 through
+#     init + LEAD_DAYS, and feeds the model the true future ocean state.
+#   "anomaly_persistence": forcing(valid) = clim(valid) + [ERA5(init) -
+#     clim(init)], i.e. the init-time anomaly is held fixed on top of a
+#     day-of-year climatology (sea ice clipped to [0, 1]). Only needs ERA5
+#     at init and uses no future ocean information. Requires the climatology
+#     to be built first: `python -m ngcm.build_climatology` (see
+#     slurm/build_climatology.sbatch).
+# A zarr store records the mode it was created with, and run_month refuses to
+# write into a store made with a different one.
+FORCING_MODE = "anomaly_persistence"
+CLIMATOLOGY_YEARS = (1991, 2020)
+
 LEAD_DAYS = 45
 OUTPUT_TIMESTEP_HOURS = 24
 CHUNK_DAYS = 9  # rollout is computed and flushed to zarr in chunks this long

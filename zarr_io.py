@@ -58,8 +58,24 @@ def write_skeleton(
         da.full(shape, np.nan, dtype=np.float32, chunks=chunks),
     )
 
-  skeleton = xarray.Dataset(data_vars, coords=coords)
+  skeleton = xarray.Dataset(
+      data_vars, coords=coords, attrs={"forcing_mode": config.FORCING_MODE}
+  )
   skeleton.to_zarr(store_path, mode="w", compute=False)
+
+
+def check_forcing_mode(store_path: Path) -> None:
+  """Raises if an existing store was built with a different FORCING_MODE.
+
+  Stores created before the mode was recorded had observed forcing.
+  """
+  stored = xarray.open_zarr(store_path).attrs.get("forcing_mode", "observed")
+  if stored != config.FORCING_MODE:
+    raise ValueError(
+        f"{store_path} was created with forcing_mode={stored!r} but "
+        f"config.FORCING_MODE={config.FORCING_MODE!r}. Mixing modes in one "
+        "archive would make it inconsistent -- use a different --output-dir."
+    )
 
 
 def write_region(
